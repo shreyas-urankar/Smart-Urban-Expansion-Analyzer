@@ -4,6 +4,7 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import dataRoutes from "./routes/dataRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
 const app = express();
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/api/data", dataRoutes);
+app.use("/api/users", userRoutes);
 
 // Sample data endpoint for frontend testing
 app.get("/api/sample-data", (req, res) => {

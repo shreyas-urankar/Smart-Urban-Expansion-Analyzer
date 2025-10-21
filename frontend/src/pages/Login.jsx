@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 function Login() {
   const [username, setUsername] = useState("");
@@ -7,7 +8,7 @@ function Login() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -16,16 +17,18 @@ function Login() {
       return;
     }
 
-    // Login logic
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-      localStorage.setItem("user", username);
-      localStorage.setItem("token", "demo-token-" + Date.now());
-      navigate("/dashboard");
-    } else {
-      setError("Invalid username or password.");
+    try {
+      const response = await axios.post("http://localhost:5000/api/users/login", { username, password });
+      if (response.data.token) {
+        localStorage.setItem("user", username);
+        localStorage.setItem("token", response.data.token);
+        navigate("/dashboard");
+      } else {
+        setError("Invalid username or password.");
+      }
+    } catch (err) {
+      setError("Login failed. Please try again.");
+      console.error("Login error:", err);
     }
   };
 

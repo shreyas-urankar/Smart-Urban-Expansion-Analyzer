@@ -1,49 +1,65 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import axios from "axios";
 
 function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     if (username.trim() === "" || password.trim() === "") {
       setError("Please enter both username and password.");
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
+      setLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters long.");
+      setLoading(false);
       return;
     }
 
-    // Register logic
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const userExists = users.find(user => user.username === username);
-    
-    if (userExists) {
-      setError("Username already exists. Please choose another.");
-      return;
+    try {
+      const response = await axios.post("http://localhost:5000/api/users/register", { 
+        username, 
+        password 
+      });
+      
+      console.log("Registration response:", response.data);
+      
+      // ✅ FIX: Check for token instead of success field
+      if (response.data.token) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("token", response.data.token);
+        navigate("/dashboard");
+      } else {
+        setError(response.data.message || "Registration failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Registration error:", err);
+      // ✅ FIX: Get proper error message from backend
+      setError(
+        err.response?.data?.message || 
+        err.response?.data?.error || 
+        "Registration failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
     }
-    
-    // Add new user
-    users.push({ username, password });
-    localStorage.setItem("users", JSON.stringify(users));
-    
-    // Auto-login after registration
-    localStorage.setItem("user", username);
-    localStorage.setItem("token", "demo-token-" + Date.now());
-    navigate("/dashboard");
   };
 
   return (
@@ -77,6 +93,7 @@ function Register() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              disabled={loading}
             />
           </div>
           
@@ -91,6 +108,7 @@ function Register() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              disabled={loading}
             />
           </div>
 
@@ -105,14 +123,16 @@ function Register() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-white/20 bg-white/10 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              disabled={loading}
             />
           </div>
           
           <button
             type="submit"
-            className="w-full bg-white text-blue-900 py-3 rounded-xl font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl"
+            disabled={loading}
+            className="w-full bg-white text-blue-900 py-3 rounded-xl font-semibold hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            Create Account
+            {loading ? "Creating Account..." : "Create Account"}
           </button>
         </form>
         
