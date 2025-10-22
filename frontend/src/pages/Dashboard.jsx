@@ -5,51 +5,46 @@ import Sidebar from "../components/Sidebar";
 
 function Dashboard() {
   const username = localStorage.getItem("user") || "user";
+  const token = localStorage.getItem("token");
   const [activeTab, setActiveTab] = useState("overview");
   const [isLoading, setIsLoading] = useState(true);
-  const [apiData, setApiData] = useState([]);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     try {
       await axios.post("http://localhost:5000/api/data", {
         username,
-        analysisResult: "User logged out",
+        analysisResult: "User logged out via dashboard",
+        actionType: "logout",
+        city: "System"
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-      navigate("/login");
     } catch (err) {
       console.error("Logout save failed:", err);
+    } finally {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       navigate("/login");
     }
   };
 
   const fetchData = useCallback(async () => {
-    const sampleMetrics = [
-      { icon: "🏙️", title: "Urban Areas", value: "247", change: "+12%", trend: "up" },
-      { icon: "📈", title: "Growth Rate", value: "12.5%", change: "+2.3%", trend: "up" },
-      { icon: "👥", title: "Population", value: "2.3M", change: "+5.7%", trend: "up" },
-      { icon: "🌿", title: "Green Space", value: "38%", change: "-1.2%", trend: "down" }
-    ];
-
+    // Silently fetch data for internal tracking only
     try {
-      const response = await axios.get("http://localhost:5000/api/data");
-      const data = response.data;
-
-      if (Array.isArray(data) && data.length > 0) {
-        setApiData(data);
-      } else {
-        console.log("Using sample metrics since DB is empty");
-        setApiData(sampleMetrics);
-      }
-
+      await axios.get("http://localhost:5000/api/data", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching data:", error);
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     fetchData();
@@ -57,19 +52,26 @@ function Dashboard() {
 
   useEffect(() => {
     const saveUserLogin = async () => {
-      if (username && username !== "user") {
+      if (username && username !== "user" && token) {
         try {
           await axios.post("http://localhost:5000/api/data", {
             username,
-            analysisResult: "User Logged In",
+            analysisResult: "User accessed dashboard",
+            actionType: "login",
+            city: "System"
+          }, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           });
+          console.log("✅ Dashboard access event saved to database");
         } catch (err) {
-          console.error("Failed to auto-save login:", err);
+          console.error("Failed to auto-save dashboard access:", err);
         }
       }
     };
     saveUserLogin();
-  }, [username]);
+  }, [username, token]);
 
   if (isLoading) {
     return (
@@ -90,7 +92,7 @@ function Dashboard() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Urban Growth Analytics</h1>
               <p className="text-gray-600 mt-1">
-                Welcome back, <span className="text-blue-600 font-semibold">{username}</span> • Last updated: Today, 07:03 PM
+                Welcome back, <span className="text-blue-600 font-semibold">{username}</span> • Last updated: {new Date().toLocaleString()}
               </p>
             </div>
             <div className="flex items-center space-x-4 mt-4 lg:mt-0">
@@ -135,26 +137,7 @@ function Dashboard() {
       <div className="flex min-h-screen">
         <Sidebar />
         <div className="flex-1 overflow-auto p-6">
-          {apiData.length > 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Real Urban Data from MongoDB</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {apiData.map((item, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-gray-800">{item.username || `User ${index + 1}`}</h4>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                        {item.analysisResult || "N/A"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">📅 {new Date(item.createdAt).toLocaleString()}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Streamlit Dashboard */}
+          {/* Streamlit Dashboard with username parameter */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
             <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-gray-50 to-blue-50">
               <div className="flex items-center justify-between">
@@ -169,7 +152,7 @@ function Dashboard() {
               </div>
             </div>
             <iframe
-              src="http://localhost:8501"
+              src={`http://localhost:8501?username=${encodeURIComponent(username)}`}
               width="100%"
               height="800px"
               className="border-0"

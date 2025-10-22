@@ -3,6 +3,7 @@ import sys
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import urllib.parse
 
 # Add current directory to Python path
 current_dir = os.path.dirname(__file__)
@@ -25,6 +26,16 @@ if not decoded:
     st.error("❌ Invalid token. Please login again.")
     st.stop()
 
+# ✅ FIXED: Use new st.query_params instead of deprecated st.experimental_get_query_params
+query_params = st.query_params
+username_from_url = query_params.get("username", [None])[0]
+
+if username_from_url:
+    username = urllib.parse.unquote(username_from_url)
+else:
+    # Fallback to token username
+    username = decoded.get("username", f"User {decoded.get('id', 'Unknown')}")
+
 user_id = decoded.get("id", "Unknown User")
 
 # Initialize session state for model loading
@@ -35,7 +46,7 @@ if 'predictor' not in st.session_state:
 
 # Main Dashboard
 st.title("🌆 AI-Powered Urban Growth Prediction Dashboard")
-st.subheader(f"Welcome, User {user_id}! 👋")
+st.subheader(f"Welcome, {username}! 👋")
 
 st.markdown("""
 **Visualize predicted urban expansion over time with AI-powered insights using TensorFlow U-Net model.**
@@ -87,24 +98,24 @@ if st.session_state.model_loaded and st.session_state.predictor:
             with col1:
                 fig1, ax1 = plt.subplots(figsize=(4, 4))
                 ax1.imshow(sample_data["ground_truth"], cmap='viridis')
-                ax1.set_title("🏙️ Ground Truth")
+                ax1.set_title("Ground Truth")
                 ax1.axis('off')
                 st.pyplot(fig1)
             
             with col2:
                 fig2, ax2 = plt.subplots(figsize=(4, 4))
                 ax2.imshow(sample_data["prediction"], cmap='plasma')
-                ax2.set_title("🤖 AI Prediction")
+                ax2.set_title("AI Prediction")
                 ax2.axis('off')
                 st.pyplot(fig2)
             
             with col3:
                 fig3, ax3 = plt.subplots(figsize=(4, 4))
                 ax3.imshow(sample_data["difference"], cmap='coolwarm')
-                ax3.set_title("📊 Difference Map")
+                ax3.set_title("Difference Map")
                 ax3.axis('off')
                 st.pyplot(fig3)
-            plt.close('all')  # Free memory
+            plt.close('all')
     else:
         st.warning("⚠️ No prediction data available.")
 
@@ -123,12 +134,12 @@ if st.session_state.model_loaded and st.session_state.predictor:
     ax.set_facecolor('#f8fafc')
 
     st.pyplot(fig)
-    plt.close(fig)  # Free memory
+    plt.close(fig)
 
 else:
     st.warning("⏳ AI Model is still loading... Please wait or refresh the page.")
 
-# Model Information (always show)
+# Model Information
 st.subheader("🤖 AI Model Information")
 
 st.markdown("""
