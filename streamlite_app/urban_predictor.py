@@ -20,7 +20,7 @@ class UrbanGrowthPredictor:
             model_path = r"C:\Users\Lenovo\Desktop\LY MAJOR PROJECT\data\models\urban_growth_unet.h5"
             if os.path.exists(model_path):
                 self.model = tf.keras.models.load_model(model_path)
-                print("✅ AI Model loaded successfully")
+                print("✅ Model loaded successfully")
             else:
                 print(f"❌ Model file not found: {model_path}")
         except Exception as e:

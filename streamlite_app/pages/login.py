@@ -16,11 +16,11 @@ st.set_page_config(page_title="Login", page_icon="🔐", layout="centered")
 token = get_token()
 if token:
     st.success("✅ You are already logged in!")
-    if st.button("Go to AI Dashboard"):
+    if st.button("Go to Dashboard"):
         st.switch_page("pages/dashboard.py")
     st.stop()
 
-st.title("🔐 Login to AI Urban Growth Dashboard")
+st.title("🔐 Login to Urban Growth Dashboard")
 
 username = st.text_input("👤 Username", placeholder="Enter your username")
 password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
@@ -42,7 +42,7 @@ if st.button("🚀 Login", type="primary", use_container_width=True):
                 token = data.get("token")
                 if token:
                     save_token(token)
-                    st.success("✅ Login successful! Loading AI Dashboard...")
+                    st.success("✅ Login successful! Loading Dashboard...")
                     st.balloons()
                     st.switch_page("pages/dashboard.py")
                 else:

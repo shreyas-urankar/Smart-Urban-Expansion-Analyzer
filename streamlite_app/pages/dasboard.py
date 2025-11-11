@@ -12,12 +12,12 @@ sys.path.append(parent_dir)
 
 from utils import get_token, decode_token
 
-st.set_page_config(page_title="AI Urban Growth Dashboard", page_icon="🌆", layout="wide")
+st.set_page_config(page_title="Urban Growth Prediction Dashboard", page_icon="🌆", layout="wide")
 
 # Check authentication
 token = get_token()
 if not token:
-    st.error("🔐 Please login to access the AI Dashboard")
+    st.error("🔐 Please login to access the Dashboard")
     st.stop()
 
 # Decode token to get user info
@@ -45,23 +45,23 @@ if 'predictor' not in st.session_state:
     st.session_state.predictor = None
 
 # Main Dashboard
-st.title("🌆 AI-Powered Urban Growth Prediction Dashboard")
+st.title("🌆 Urban Growth Prediction Dashboard")
 st.subheader(f"Welcome, {username}! 👋")
 
 st.markdown("""
-**Visualize predicted urban expansion over time with AI-powered insights using TensorFlow U-Net model.**
+**Visualize predicted urban expansion over time with advanced pattern recognition using TensorFlow U-Net model.**
 """)
 
-# Load AI Model (only once)
+# Load Model (only once)
 if not st.session_state.model_loaded:
-    with st.spinner("🚀 Loading AI Model and Data... This may take a moment..."):
+    with st.spinner("🚀 Loading Prediction Model and Data... This may take a moment..."):
         try:
             from urban_predictor import UrbanGrowthPredictor
             st.session_state.predictor = UrbanGrowthPredictor()
             st.session_state.model_loaded = True
-            st.success("✅ AI Model loaded successfully!")
+            st.success("✅ Prediction Model loaded successfully!")
         except Exception as e:
-            st.error(f"❌ Error loading AI model: {e}")
+            st.error(f"❌ Error loading prediction model: {e}")
             st.session_state.predictor = None
 
 # Show content only if model is loaded
@@ -69,7 +69,7 @@ if st.session_state.model_loaded and st.session_state.predictor:
     predictor = st.session_state.predictor
     
     # Model Performance Metrics
-    st.subheader("📊 AI Model Performance Metrics")
+    st.subheader("📊 Model Performance Metrics")
 
     metrics = predictor.get_metrics()
     if metrics:
@@ -105,7 +105,7 @@ if st.session_state.model_loaded and st.session_state.predictor:
             with col2:
                 fig2, ax2 = plt.subplots(figsize=(4, 4))
                 ax2.imshow(sample_data["prediction"], cmap='plasma')
-                ax2.set_title("AI Prediction")
+                ax2.set_title("Model Prediction")
                 ax2.axis('off')
                 st.pyplot(fig2)
             
@@ -129,7 +129,7 @@ if st.session_state.model_loaded and st.session_state.predictor:
     ax.fill_between(years, growth, alpha=0.3, color='#2563eb')
     ax.set_xlabel("Year", fontsize=12, fontweight='bold')
     ax.set_ylabel("Urban Growth (%)", fontsize=12, fontweight='bold')
-    ax.set_title("AI-Predicted Urban Growth Trend (2000-2040)", fontsize=14, fontweight='bold')
+    ax.set_title("Predicted Urban Growth Trend (2000-2040)", fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.set_facecolor('#f8fafc')
 
@@ -137,10 +137,10 @@ if st.session_state.model_loaded and st.session_state.predictor:
     plt.close(fig)
 
 else:
-    st.warning("⏳ AI Model is still loading... Please wait or refresh the page.")
+    st.warning("⏳ Model is still loading... Please wait or refresh the page.")
 
 # Model Information
-st.subheader("🤖 AI Model Information")
+st.subheader("🤖 Model Information")
 
 st.markdown("""
 **Model Architecture:** U-Net (Convolutional Neural Network)  
@@ -161,12 +161,12 @@ with col1:
 with col2:
     st.metric("Data Points", "1.2M", "100K new")
 with col3:
-    st.metric("AI Accuracy", "89%", "2% improved")
+    st.metric("Accuracy", "89%", "2% improved")
 with col4:
     st.metric("Predictions", "50K", "5K today")
 
 # Refresh button
-if st.button("🔄 Refresh AI Data"):
+if st.button("🔄 Refresh Data"):
     st.session_state.model_loaded = False
     st.session_state.predictor = None
     st.rerun()

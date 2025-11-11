@@ -16,11 +16,11 @@ st.set_page_config(page_title="Register", page_icon="📝", layout="centered")
 token = get_token()
 if token:
     st.success("✅ You are already logged in!")
-    if st.button("Go to AI Dashboard"):
+    if st.button("Go to Dashboard"):
         st.switch_page("pages/dashboard.py")
     st.stop()
 
-st.title("📝 Create AI Dashboard Account")
+st.title("📝 Create Dashboard Account")
 
 username = st.text_input("👤 Choose Username", placeholder="Enter a username")
 password = st.text_input("🔒 Create Password", type="password", placeholder="Enter a password (min. 6 characters)")
