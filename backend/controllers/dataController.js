@@ -1,9 +1,10 @@
 import Data from "../models/dataModel.js";
 
-// ✅ Save data to MongoDB
+// ✅ Save prediction / urban data
 export const saveData = async (req, res) => {
   try {
     const {
+      userId,
       username,
       analysisResult,
       pollutionLevel,
@@ -11,27 +12,34 @@ export const saveData = async (req, res) => {
       population,
       density,
       growth,
+      year,
+      prediction,
       urbanData,
     } = req.body;
 
     const newData = new Data({
+      userId,
       username,
+      action: "PREDICT",
       analysisResult,
       pollutionLevel: pollutionLevel || "Medium",
       city: city || "Unknown City",
       population,
       density,
       growth,
+      year,
+      prediction,
       urbanData,
-      createdAt: new Date(),
     });
 
     await newData.save();
+
     res.status(201).json({
       message: "✅ Data saved successfully!",
       data: newData,
     });
   } catch (error) {
+    console.error("❌ Save Data Error:", error);
     res.status(500).json({
       message: "❌ Error saving data",
       error: error.message,
@@ -39,15 +47,19 @@ export const saveData = async (req, res) => {
   }
 };
 
-// ✅ Retrieve all stored data
+// ✅ Get all stored data
 export const getData = async (req, res) => {
   try {
-    const data = await Data.find().sort({ createdAt: -1 });
+    const data = await Data.find()
+      .sort({ createdAt: -1 })
+      .populate("userId", "username");
+
     res.status(200).json({
       message: "✅ Data fetched successfully!",
       data,
     });
   } catch (error) {
+    console.error("❌ Get Data Error:", error);
     res.status(500).json({
       message: "❌ Error retrieving data",
       error: error.message,
@@ -55,7 +67,7 @@ export const getData = async (req, res) => {
   }
 };
 
-// ✅ Get basic analytics (optional summary)
+// ✅ Urban analytics summary
 export const getUrbanAnalytics = async (req, res) => {
   try {
     const analytics = await Data.aggregate([
@@ -84,6 +96,7 @@ export const getUrbanAnalytics = async (req, res) => {
       analytics,
     });
   } catch (error) {
+    console.error("❌ Analytics Error:", error);
     res.status(500).json({
       message: "❌ Error generating analytics",
       error: error.message,
