@@ -1,3 +1,4 @@
+// controllers/dataController.js
 import Data from "../models/dataModel.js";
 
 // ✅ Save prediction / urban data
@@ -15,14 +16,14 @@ export const saveData = async (req, res) => {
       urbanData,
     } = req.body;
 
-    // ✅ take user from JWT (set by verifyToken middleware)
+    // ✅ take user from token
     const userId = req.user.id;
     const username = req.user.username;
 
-    if (!analysisResult) {
-      return res.status(400).json({
-        message: "analysisResult is required",
-      });
+    // ✅ Force city to Pune if not provided or wrongly sent as "system"
+    let finalCity = city;
+    if (!finalCity || finalCity.toLowerCase() === "system") {
+      finalCity = "Pune";
     }
 
     const newData = new Data({
@@ -31,7 +32,7 @@ export const saveData = async (req, res) => {
       action: "PREDICT",
       analysisResult,
       pollutionLevel: pollutionLevel || "Medium",
-      city: city || "Unknown City",
+      city: finalCity,
       population,
       density,
       growth,
