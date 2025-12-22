@@ -4,8 +4,6 @@ import Data from "../models/dataModel.js";
 export const saveData = async (req, res) => {
   try {
     const {
-      userId,
-      username,
       analysisResult,
       pollutionLevel,
       city,
@@ -16,6 +14,16 @@ export const saveData = async (req, res) => {
       prediction,
       urbanData,
     } = req.body;
+
+    // ✅ take user from JWT (set by verifyToken middleware)
+    const userId = req.user.id;
+    const username = req.user.username;
+
+    if (!analysisResult) {
+      return res.status(400).json({
+        message: "analysisResult is required",
+      });
+    }
 
     const newData = new Data({
       userId,
