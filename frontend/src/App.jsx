@@ -6,6 +6,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
+import PopulationDashboard from "./components/PopulationDashboard"; // ← Added import
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -15,103 +16,127 @@ function App() {
         <Routes>
           {/* Redirect root to login */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          
+
           {/* Login page - show navbar */}
-          <Route path="/login" element={
-            <>
-              <Navbar />
-              <Login />
-            </>
-          } />
-          
+          <Route
+            path="/login"
+            element={
+              <>
+                <Navbar />
+                <Login />
+              </>
+            }
+          />
+
           {/* Register page - show navbar */}
-          <Route path="/register" element={
-            <>
-              <Navbar />
-              <Register />
-            </>
-          } />
-          
+          <Route
+            path="/register"
+            element={
+              <>
+                <Navbar />
+                <Register />
+              </>
+            }
+          />
+
           {/* Protected routes - no navbar (they have sidebar) */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <Dashboard />
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/reports" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <Reports />
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          {/* Other protected routes */}
-          <Route path="/population" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                  <h1 className="text-3xl font-bold text-gray-900">Population Analytics</h1>
-                  <p className="text-gray-600">Detailed population metrics and demographics coming soon...</p>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <Dashboard />
                 </div>
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/infrastructure" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                  <h1 className="text-3xl font-bold text-gray-900">Infrastructure Analytics</h1>
-                  <p className="text-gray-600">Urban infrastructure insights coming soon...</p>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <Reports />
                 </div>
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/environment" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                  <h1 className="text-3xl font-bold text-gray-900">Environmental Analytics</h1>
-                  <p className="text-gray-600">Sustainability and environmental data coming soon...</p>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Population route - now shows the real dashboard */}
+          <Route
+            path="/population"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <PopulationDashboard />
                 </div>
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/transport" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                  <h1 className="text-3xl font-bold text-gray-900">Transport Analytics</h1>
-                  <p className="text-gray-600">Transportation and mobility data coming soon...</p>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/infrastructure"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <div className="flex-1 p-8 bg-gray-50">
+                    <h1 className="text-3xl font-bold text-gray-900">Infrastructure Analytics</h1>
+                    <p className="text-gray-600">Urban infrastructure insights coming soon...</p>
+                  </div>
                 </div>
-              </div>
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <div className="flex min-h-screen">
-                <Sidebar />
-                <div className="flex-1 p-8 bg-gray-50">
-                  <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-                  <p className="text-gray-600">System configuration coming soon...</p>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/environment"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <div className="flex-1 p-8 bg-gray-50">
+                    <h1 className="text-3xl font-bold text-gray-900">Environmental Analytics</h1>
+                    <p className="text-gray-600">Sustainability and environmental data coming soon...</p>
+                  </div>
                 </div>
-              </div>
-            </ProtectedRoute>
-          } />
-          
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/transport"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <div className="flex-1 p-8 bg-gray-50">
+                    <h1 className="text-3xl font-bold text-gray-900">Transport Analytics</h1>
+                    <p className="text-gray-600">Transportation and mobility data coming soon...</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <div className="flex min-h-screen">
+                  <Sidebar />
+                  <div className="flex-1 p-8 bg-gray-50">
+                    <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+                    <p className="text-gray-600">System configuration coming soon...</p>
+                  </div>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+
           {/* Catch all route - redirect to login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

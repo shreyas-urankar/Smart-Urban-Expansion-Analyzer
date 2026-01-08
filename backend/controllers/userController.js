@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 export const registerUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-
+    
     if (!username || !password) {
       return res.status(400).json({
         success: false,
@@ -15,10 +15,11 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    // Check if user exists (case insensitive)
     const existingUser = await User.findOne({
       username: { $regex: new RegExp("^" + username + "$", "i") },
     });
-
+    
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -27,7 +28,6 @@ export const registerUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = await User.create({
       username,
       password: hashedPassword,
@@ -47,6 +47,7 @@ export const registerUser = async (req, res) => {
       analysisResult: "User registered successfully",
       city: "System",
     });
+    
     await registrationData.save();
 
     res.status(201).json({
@@ -55,6 +56,7 @@ export const registerUser = async (req, res) => {
       user: { id: newUser._id, username: newUser.username },
       token,
     });
+    
   } catch (error) {
     console.error("❌ Registration Error:", error);
     res.status(500).json({
@@ -69,7 +71,7 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-
+    
     if (!username || !password) {
       return res.status(400).json({
         success: false,
@@ -78,6 +80,7 @@ export const loginUser = async (req, res) => {
     }
 
     const user = await User.findOne({ username });
+    
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -86,6 +89,7 @@ export const loginUser = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -107,6 +111,7 @@ export const loginUser = async (req, res) => {
       analysisResult: "User logged in successfully",
       city: "System",
     });
+    
     await loginData.save();
 
     res.json({
@@ -115,6 +120,7 @@ export const loginUser = async (req, res) => {
       token,
       user: { id: user._id, username: user.username },
     });
+    
   } catch (error) {
     console.error("❌ Login Error:", error);
     res.status(500).json({
