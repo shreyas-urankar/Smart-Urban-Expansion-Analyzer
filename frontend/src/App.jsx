@@ -6,8 +6,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Reports from "./pages/Reports";
-import PopulationDashboard from "./components/PopulationDashboard"; // ← Added import
+import PopulationDashboard from "./components/PopulationDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Environment from "./pages/Environment"; // Import the Environment component
 
 function App() {
   return (
@@ -92,16 +93,14 @@ function App() {
             }
           />
 
+          {/* Environment route - SHOWS THE ACTUAL COMPONENT */}
           <Route
             path="/environment"
             element={
               <ProtectedRoute>
                 <div className="flex min-h-screen">
                   <Sidebar />
-                  <div className="flex-1 p-8 bg-gray-50">
-                    <h1 className="text-3xl font-bold text-gray-900">Environmental Analytics</h1>
-                    <p className="text-gray-600">Sustainability and environmental data coming soon...</p>
-                  </div>
+                  <Environment /> {/* This is the actual Environment component */}
                 </div>
               </ProtectedRoute>
             }
