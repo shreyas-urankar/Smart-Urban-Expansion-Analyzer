@@ -1,54 +1,85 @@
 import mongoose from "mongoose";
 
 const environmentSchema = new mongoose.Schema({
-  city: { 
-    type: String, 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true
+  },
+  username: {
+    type: String,
+    required: true
+  },
+  city: {
+    type: String,
     required: true,
-    index: true 
+    default: "Pune"
   },
-  date: { 
-    type: Date, 
-    default: Date.now 
-  },
-  aqi: { 
+  aqi: {
     type: Number,
-    min: 1,
-    max: 5
+    required: true,
+    min: 0,
+    max: 500
   },
-  pm25: { 
-    type: Number 
-  },
-  pm10: { 
-    type: Number 
-  },
-  co2: { 
+  pm25: {
     type: Number,
-    default: 2.0
+    required: true,
+    min: 0
   },
-  greenCover: { 
+  pm10: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  co2: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  greenCover: {
+    type: Number,
+    required: true,
+    min: 0,
+    max: 100
+  },
+  waterQuality: {
     type: Number,
     min: 0,
     max: 100,
-    default: 25
+    default: 70
   },
-  waterQuality: { 
+  temperature: {
+    type: Number,
+    default: 28
+  },
+  humidity: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: 60
+  },
+  windSpeed: {
+    type: Number,
+    default: 8
+  },
+  pollutionLevel: {
     type: String,
-    enum: ["Excellent", "Good", "Moderate", "Poor", "Very Poor"],
+    enum: ["Good", "Moderate", "Unhealthy", "Hazardous"],
     default: "Moderate"
   },
-  pollutants: {
-    co: Number,
-    no2: Number,
-    o3: Number,
-    so2: Number,
-    nh3: Number
+  source: {
+    type: String,
+    enum: ["API", "User", "System", "Test"],
+    default: "User"
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
-// Compound index for city and date queries
-environmentSchema.index({ city: 1, date: -1 });
+// Create indexes for faster queries
+environmentSchema.index({ userId: 1, city: 1, createdAt: -1 });
+environmentSchema.index({ username: 1, createdAt: -1 });
 
 const Environment = mongoose.model("Environment", environmentSchema);
+
 export default Environment;

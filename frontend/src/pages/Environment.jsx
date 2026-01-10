@@ -1,367 +1,435 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar
+} from "recharts";
 
 function Environment() {
+  const [environmentData, setEnvironmentData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
-  const [selectedCity, setSelectedCity] = useState("Delhi");
-  const token = localStorage.getItem("token");
+  const [selectedCity, setSelectedCity] = useState("Pune");
+  const [timeRange, setTimeRange] = useState("week");
+  const [aqiData, setAqiData] = useState(null);
+  const [saving, setSaving] = useState(false);
 
-  // Mock data for environment module
-  const mockData = {
-    aqi: 185,
-    status: "Poor",
-    pm25: 158,
-    pm10: 285,
-    greenCover: 23,
-    co2: 2.8,
-    waterQuality: "Poor",
-    cities: [
-      { 
-        name: "Delhi", 
-        aqi: 185, 
-        status: "Poor", 
-        color: "#ff0000",
-        pm25: 158,
-        pm10: 285,
-        greenCover: 23,
-        co2: 2.8,
-        waterQuality: "Poor",
-        lat: 28.7041,
-        lon: 77.1025
-      },
-      { 
-        name: "Mumbai", 
-        aqi: 95, 
-        status: "Moderate", 
-        color: "#ff7e00",
-        pm25: 95,
-        pm10: 180,
-        greenCover: 18,
-        co2: 2.2,
-        waterQuality: "Moderate",
-        lat: 19.0760,
-        lon: 72.8777
-      },
-      { 
-        name: "Bangalore", 
-        aqi: 65, 
-        status: "Fair", 
-        color: "#ffff00",
-        pm25: 65,
-        pm10: 120,
-        greenCover: 35,
-        co2: 1.9,
-        waterQuality: "Moderate",
-        lat: 12.9716,
-        lon: 77.5946
-      },
-      { 
-        name: "Pune", 
-        aqi: 72, 
-        status: "Fair", 
-        color: "#ffff00",
-        pm25: 72,
-        pm10: 135,
-        greenCover: 28,
-        co2: 2.0,
-        waterQuality: "Good",
-        lat: 18.5204,
-        lon: 73.8567
-      },
-    ],
-    trendData: [
-      { day: "Mon", aqi: 180 },
-      { day: "Tue", aqi: 170 },
-      { day: "Wed", aqi: 190 },
-      { day: "Thu", aqi: 185 },
-      { day: "Fri", aqi: 175 },
-      { day: "Sat", aqi: 165 },
-      { day: "Sun", aqi: 160 }
-    ]
+  const token = localStorage.getItem("token");
+  const username = localStorage.getItem("user");
+
+  // Sample cities
+  const cities = ["Pune", "Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad", "Kolkata"];
+
+  // Fetch environment data
+  const fetchEnvironmentData = async () => {
+    try {
+      setLoading(true);
+      console.log(`📡 Fetching environment data for ${selectedCity}, range: ${timeRange}`);
+      
+      const response = await axios.get(`http://localhost:5000/api/environment?city=${selectedCity}&range=${timeRange}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log("📥 API Response:", response.data);
+      
+      if (response.data && response.data.data) {
+        setEnvironmentData(response.data.data);
+        
+        // Process data for charts
+        if (response.data.data.length > 0) {
+          const latest = response.data.data[response.data.data.length - 1];
+          setAqiData(latest);
+          console.log("📊 Latest data:", latest);
+        }
+      }
+      
+      setLoading(false);
+    } catch (apiError) {
+      console.error("❌ Error fetching environment data:", apiError);
+      // Use mock data if API not available
+      generateMockData();
+      setLoading(false);
+    }
+  };
+
+  // Save environment data to backend
+  const saveEnvironmentDataToBackend = async () => {
+    try {
+      setSaving(true);
+      
+      // Create data to save
+      const currentData = aqiData || {
+        aqi: 85,
+        pm25: 42,
+        pm10: 78,
+        co2: 455,
+        greenCover: 24.5,
+        waterQuality: 72,
+        temperature: 28,
+        humidity: 65,
+        windSpeed: 12
+      };
+      
+      const dataToSave = {
+        city: selectedCity,
+        aqi: currentData.aqi,
+        pm25: currentData.pm25,
+        pm10: currentData.pm10,
+        co2: currentData.co2,
+        greenCover: currentData.greenCover,
+        waterQuality: currentData.waterQuality || 72,
+        temperature: currentData.temperature || 28,
+        humidity: currentData.humidity || 65,
+        windSpeed: currentData.windSpeed || 12,
+        pollutionLevel: getPollutionLevel(currentData.pm25)
+      };
+
+      console.log("📤 Sending environment data to backend:", dataToSave);
+      
+      const response = await axios.post(
+        "http://localhost:5000/api/environment",
+        dataToSave,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log("✅ Backend response:", response.data);
+      
+      // Refresh data after saving
+      await fetchEnvironmentData();
+      
+      alert("✅ Environment data saved to database!");
+      return response.data;
+    } catch (error) {
+      console.error("❌ Error saving environment data:", error.response?.data || error.message);
+      alert(`❌ Failed to save data: ${error.response?.data?.message || error.message}`);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Generate mock data for demonstration
+  const generateMockData = () => {
+    const mockData = [];
+    const dates = [];
+    
+    // Generate dates based on time range
+    const now = new Date();
+    let days = timeRange === "week" ? 7 : timeRange === "month" ? 30 : 365;
+    
+    for (let i = days; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(now.getDate() - i);
+      dates.push(date.toISOString().split('T')[0]);
+    }
+    
+    // Generate data points
+    dates.forEach((date, index) => {
+      const baseAQI = 80 + Math.sin(index * 0.3) * 20 + Math.random() * 10;
+      const pm25 = 30 + Math.sin(index * 0.4) * 15 + Math.random() * 8;
+      const pm10 = 50 + Math.sin(index * 0.35) * 20 + Math.random() * 12;
+      const co2 = 400 + Math.sin(index * 0.25) * 50 + Math.random() * 30;
+      const greenCover = 25 + Math.sin(index * 0.1) * 5 + Math.random() * 3;
+      
+      mockData.push({
+        date,
+        city: selectedCity,
+        aqi: Math.round(baseAQI),
+        pm25: Math.round(pm25),
+        pm10: Math.round(pm10),
+        co2: Math.round(co2),
+        greenCover: Math.round(greenCover * 10) / 10,
+        waterQuality: Math.round(65 + Math.sin(index * 0.2) * 15),
+        temperature: Math.round(28 + Math.sin(index * 0.15) * 5),
+        humidity: Math.round(60 + Math.sin(index * 0.25) * 15),
+        windSpeed: Math.round(8 + Math.sin(index * 0.3) * 4),
+      });
+    });
+    
+    setEnvironmentData(mockData);
+    
+    if (mockData.length > 0) {
+      const latest = mockData[mockData.length - 1];
+      setAqiData(latest);
+    }
   };
 
   useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setData(mockData);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    fetchEnvironmentData();
+  }, [selectedCity, timeRange]);
 
-  const getAQIColor = (aqi) => {
-    if (aqi <= 50) return "#00e400";
-    if (aqi <= 100) return "#ffff00";
-    if (aqi <= 200) return "#ff7e00";
-    if (aqi <= 300) return "#ff0000";
-    return "#99004c";
+  // AQI Status and Color
+  const getAqiStatus = (aqi) => {
+    if (aqi <= 50) return { status: "Good", color: "#10B981", level: "Low" };
+    if (aqi <= 100) return { status: "Moderate", color: "#FBBF24", level: "Medium" };
+    if (aqi <= 150) return { status: "Unhealthy for Sensitive", color: "#F97316", level: "High" };
+    if (aqi <= 200) return { status: "Unhealthy", color: "#EF4444", level: "Very High" };
+    return { status: "Hazardous", color: "#7C3AED", level: "Severe" };
   };
 
-  const getAQIText = (aqi) => {
-    if (aqi <= 50) return "Good";
-    if (aqi <= 100) return "Fair";
-    if (aqi <= 200) return "Moderate";
-    if (aqi <= 300) return "Poor";
-    return "Very Poor";
+  // Get pollution level
+  const getPollutionLevel = (pm25) => {
+    if (pm25 <= 12) return "Good";
+    if (pm25 <= 35) return "Moderate";
+    if (pm25 <= 55) return "Unhealthy";
+    return "Hazardous";
   };
 
   if (loading) {
     return (
-      <div className="p-8 flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex-1 p-8 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading Environment Data...</p>
+          <p className="text-gray-600 font-medium">Loading Environment Analytics...</p>
         </div>
       </div>
     );
   }
 
-  const selectedCityData = data.cities.find(city => city.name === selectedCity) || data.cities[0];
+  const aqiStatus = aqiData ? getAqiStatus(aqiData.aqi) : { status: "Unknown", color: "#6B7280", level: "Unknown" };
+  const pollutionLevel = aqiData ? getPollutionLevel(aqiData.pm25) : "Unknown";
 
   return (
-    <div className="p-8 bg-gray-50 min-h-screen">
+    <div className="flex-1 p-6 bg-gray-50 overflow-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">🌿 Environmental Analytics</h1>
-        <p className="text-gray-600 mb-4">Real-time air quality, pollution levels, and environmental metrics</p>
-        
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-white rounded-xl shadow">
+        <h1 className="text-3xl font-bold text-gray-900">🌿 Environment Analytics</h1>
+        <p className="text-gray-600 mt-2">Monitor air quality, pollution levels, and environmental metrics</p>
+      </div>
+
+      {/* Controls */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <div className="flex items-center space-x-4">
-            <button 
-              onClick={() => window.location.reload()}
-              className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select City</label>
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                {cities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Time Range</label>
+              <select
+                value={timeRange}
+                onChange={(e) => setTimeRange(e.target.value)}
+                className="bg-white border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              >
+                <option value="week">Past Week</option>
+                <option value="month">Past Month</option>
+                <option value="year">Past Year</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex space-x-3">
+            <button
+              onClick={fetchEnvironmentData}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
             >
-              <span className="text-lg">🔄</span>
+              <span>🔄</span>
               <span>Refresh Data</span>
             </button>
-            <select 
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="border border-gray-300 rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-green-500"
+            <button
+              onClick={saveEnvironmentDataToBackend}
+              disabled={saving}
+              className={`px-6 py-2 ${saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors flex items-center space-x-2`}
             >
-              {data.cities.map(city => (
-                <option key={city.name} value={city.name}>{city.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="text-sm text-gray-500">
-            Last updated: {new Date().toLocaleTimeString()} • Using demo data
+              <span>{saving ? '⏳' : '💾'}</span>
+              <span>{saving ? 'Saving...' : 'Save to Database'}</span>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* AQI Card */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Air Quality Index</h3>
-            <span className="text-2xl">🌫️</span>
-          </div>
-          <div className="text-center mb-4">
-            <div 
-              className="text-5xl font-bold mb-2"
-              style={{ color: getAQIColor(selectedCityData.aqi) }}
-            >
-              {selectedCityData.aqi}
+      {/* AQI Dashboard */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* AQI Gauge */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🌡️ Air Quality Index (AQI)</h3>
+          <div className="flex flex-col items-center">
+            <div className="relative w-48 h-48">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-5xl font-bold" style={{ color: aqiStatus.color }}>
+                    {aqiData ? aqiData.aqi : "0"}
+                  </div>
+                  <div className="text-sm text-gray-600 mt-2">Current AQI</div>
+                </div>
+              </div>
+              <svg width="100%" height="100%" viewBox="0 0 100 100" className="transform -rotate-90">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" strokeWidth="10" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke={aqiStatus.color}
+                  strokeWidth="10"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(aqiData ? aqiData.aqi : 0) * 0.628} 251.2`}
+                />
+              </svg>
             </div>
-            <div 
-              className="text-lg font-medium px-3 py-1 rounded-full inline-block"
-              style={{ 
-                backgroundColor: getAQIColor(selectedCityData.aqi) + "20",
-                color: getAQIColor(selectedCityData.aqi)
-              }}
-            >
-              {getAQIText(selectedCityData.aqi)}
-            </div>
-          </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span>PM2.5</span>
-              <span className="font-medium">{selectedCityData.pm25} µg/m³</span>
-            </div>
-            <div className="flex justify-between">
-              <span>PM10</span>
-              <span className="font-medium">{selectedCityData.pm10} µg/m³</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Green Cover Card */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Green Cover</h3>
-            <span className="text-2xl">🌳</span>
-          </div>
-          <div className="text-center mb-4">
-            <div className="text-5xl font-bold text-green-600 mb-2">
-              {selectedCityData.greenCover}%
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
-              <div 
-                className="bg-green-500 h-2.5 rounded-full" 
-                style={{ width: `${selectedCityData.greenCover}%` }}
-              ></div>
-            </div>
-            <div className="text-sm">
-              {selectedCityData.greenCover < 20 ? (
-                <span className="text-yellow-600">⚠️ Below recommended</span>
-              ) : (
-                <span className="text-green-600">✓ Within healthy range</span>
-              )}
+            <div className="mt-4 text-center">
+              <div className={`px-4 py-2 rounded-full text-white font-semibold`} style={{ backgroundColor: aqiStatus.color }}>
+                {aqiStatus.status}
+              </div>
+              <p className="text-gray-600 mt-2">Pollution Level: {aqiStatus.level}</p>
+              <p className="text-xs text-gray-500 mt-1">City: {selectedCity}</p>
             </div>
           </div>
         </div>
 
-        {/* CO2 Emissions Card */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">CO₂ Emissions</h3>
-            <span className="text-2xl">☁️</span>
-          </div>
-          <div className="text-center mb-4">
-            <div className="text-5xl font-bold text-gray-700 mb-2">
-              {selectedCityData.co2}
-            </div>
-            <div className="text-gray-600">tons per capita/year</div>
-          </div>
-          <div className="text-sm text-gray-600">
-            <div className="flex justify-between">
-              <span>Global avg:</span>
-              <span>4.7 tons</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Target:</span>
-              <span className="text-green-600 font-medium">2.0 tons</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Water Quality Card */}
-        <div className="bg-white p-6 rounded-xl shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Water Quality</h3>
-            <span className="text-2xl">💧</span>
-          </div>
-          <div className="text-center mb-4">
-            <div className="text-4xl font-bold text-blue-600 mb-2">
-              {selectedCityData.waterQuality}
-            </div>
-            <div className="text-sm text-gray-600">Drinking water standard</div>
-          </div>
-          <div className="text-sm text-center">
-            {selectedCityData.waterQuality === "Good" || selectedCityData.waterQuality === "Excellent" 
-              ? <span className="text-green-600">✓ Safe for consumption</span>
-              : <span className="text-yellow-600">⚠️ Needs treatment</span>
-            }
-          </div>
-        </div>
-      </div>
-
-      {/* AQI Trend */}
-      <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
-        <h3 className="text-lg font-semibold mb-6">AQI Trend (Last Week)</h3>
-        <div className="flex items-end h-48 space-x-2">
-          {data.trendData.map((day, index) => (
-            <div key={index} className="flex-1 flex flex-col items-center">
-              <div 
-                className="w-full rounded-t-lg"
-                style={{ 
-                  height: `${day.aqi / 3}px`,
-                  backgroundColor: getAQIColor(day.aqi),
-                  minHeight: '20px'
-                }}
-              ></div>
-              <div className="mt-2 text-sm text-gray-600">{day.day}</div>
-              <div className="text-xs font-medium" style={{ color: getAQIColor(day.aqi) }}>
-                {day.aqi}
+        {/* Pollution Metrics */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🏭 Pollution Metrics</h3>
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-gray-700">PM2.5</span>
+                <span className="font-semibold">{aqiData ? aqiData.pm25 : "0"} µg/m³</span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-yellow-500"
+                  style={{ width: `${Math.min((aqiData ? aqiData.pm25 : 0) / 100 * 100, 100)}%` }}
+                />
               </div>
             </div>
-          ))}
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-gray-700">PM10</span>
+                <span className="font-semibold">{aqiData ? aqiData.pm10 : "0"} µg/m³</span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-orange-500"
+                  style={{ width: `${Math.min((aqiData ? aqiData.pm10 : 0) / 150 * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-gray-700">CO₂</span>
+                <span className="font-semibold">{aqiData ? aqiData.co2 : "0"} ppm</span>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-red-500"
+                  style={{ width: `${Math.min((aqiData ? aqiData.co2 : 0) / 600 * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            <div className="pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-700">Overall Pollution</span>
+                <span className={`px-3 py-1 rounded-full font-semibold ${
+                  pollutionLevel === "Good" ? "bg-green-100 text-green-800" :
+                  pollutionLevel === "Moderate" ? "bg-yellow-100 text-yellow-800" :
+                  pollutionLevel === "Unhealthy" ? "bg-orange-100 text-orange-800" :
+                  "bg-red-100 text-red-800"
+                }`}>
+                  {pollutionLevel}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Environmental Indicators */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🌍 Environmental Indicators</h3>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-green-600 text-xl">🌳</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Green Cover</p>
+                  <p className="text-2xl font-bold">{aqiData ? aqiData.greenCover : "0"}%</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Status</p>
+                <p className={`font-semibold ${
+                  (aqiData ? aqiData.greenCover : 0) > 30 ? "text-green-600" :
+                  (aqiData ? aqiData.greenCover : 0) > 20 ? "text-yellow-600" : "text-red-600"
+                }`}>
+                  {(aqiData ? aqiData.greenCover : 0) > 30 ? "Healthy" :
+                   (aqiData ? aqiData.greenCover : 0) > 20 ? "Moderate" : "Poor"}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-blue-600 text-xl">💧</span>
+                  <span className="text-sm font-medium">Water Quality</span>
+                </div>
+                <p className="text-2xl font-bold">{aqiData ? aqiData.waterQuality || "65" : "65"}%</p>
+              </div>
+              <div className="bg-amber-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-amber-600 text-xl">🌡️</span>
+                  <span className="text-sm font-medium">Temperature</span>
+                </div>
+                <p className="text-2xl font-bold">{aqiData ? aqiData.temperature || "28" : "28"}°C</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Cities Comparison */}
-      <div className="bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="text-lg font-semibold mb-6">City-wise Environmental Metrics</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">City</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AQI</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PM2.5</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Green Cover</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CO₂</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {data.cities.map((city) => (
-                <tr key={city.name} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">{city.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span style={{ color: getAQIColor(city.aqi) }} className="font-bold">
-                      {city.aqi}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      city.aqi <= 50 ? "bg-green-100 text-green-800" :
-                      city.aqi <= 100 ? "bg-yellow-100 text-yellow-800" :
-                      city.aqi <= 200 ? "bg-orange-100 text-orange-800" :
-                      "bg-red-100 text-red-800"
-                    }`}>
-                      {getAQIText(city.aqi)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{city.pm25} µg/m³</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
-                      <span>{city.greenCover}%</span>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${
-                            city.greenCover >= 30 ? "bg-green-500" :
-                            city.greenCover >= 20 ? "bg-yellow-500" : "bg-red-500"
-                          }`}
-                          style={{ width: `${city.greenCover}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{city.co2} tons</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* AQI Trend Chart */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📈 AQI Trend (Last 7 Days)</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={environmentData.slice(-7)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="date" stroke="#6B7280" />
+                <YAxis stroke="#6B7280" />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="aqi" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="pm25" stroke="#F59E0B" strokeWidth={2} dot={{ r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
 
-      {/* Info Section */}
-      <div className="mt-8 p-6 bg-blue-50 rounded-xl">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">ℹ️ About This Module</h3>
-        <p className="text-blue-700">
-          This Environment module shows air quality, pollution levels, green cover percentage, 
-          CO₂ emissions, and water quality metrics. The data is currently simulated for demonstration.
-          To connect real-time data, add your OpenWeather API key to the backend.
-        </p>
-        <div className="mt-4 flex items-center space-x-4 text-sm text-blue-600">
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span>Good (0-50)</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>Fair (51-100)</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-            <span>Moderate (101-200)</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span>Poor (201-300)</span>
+        {/* Pollution Breakdown */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Pollution Breakdown</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={environmentData.slice(-5)}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="date" stroke="#6B7280" />
+                <YAxis stroke="#6B7280" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="pm25" fill="#F59E0B" name="PM2.5 (µg/m³)" />
+                <Bar dataKey="pm10" fill="#F97316" name="PM10 (µg/m³)" />
+                <Bar dataKey="co2" fill="#EF4444" name="CO₂ (ppm)" />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>

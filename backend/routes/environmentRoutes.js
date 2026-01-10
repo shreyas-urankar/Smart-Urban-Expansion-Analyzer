@@ -1,16 +1,18 @@
 import express from "express";
-import { 
-  getEnvironmentData, 
-  getAQIPrediction,
-  getHistoricalTrends 
-} from "../controllers/environmentController.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
+import {
+  getEnvironmentData,
+  saveEnvironmentData,
+  getEnvironmentAnalytics,
+  getCityComparison
+} from "../controllers/environmentController.js";
 
 const router = express.Router();
 
-// All routes are protected (require authentication)
+// Protected routes
 router.get("/", verifyToken, getEnvironmentData);
-router.get("/predict", verifyToken, getAQIPrediction);
-router.get("/history", verifyToken, getHistoricalTrends);
+router.post("/", verifyToken, saveEnvironmentData);
+router.get("/analytics", verifyToken, getEnvironmentAnalytics);
+router.get("/compare", verifyToken, getCityComparison);
 
 export default router;
