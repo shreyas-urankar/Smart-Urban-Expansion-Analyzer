@@ -10,6 +10,12 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Get streamlit URL with authentication
+  const getStreamlitUrl = () => {
+    if (!token) return "http://localhost:8501";
+    return `http://localhost:8501?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`;
+  };
+
   const handleLogout = async () => {
     try {
       await axios.post("http://localhost:5000/api/data", {
@@ -152,7 +158,7 @@ function Dashboard() {
               </div>
             </div>
             <iframe
-              src={`http://localhost:8501?username=${encodeURIComponent(username)}`}
+              src={getStreamlitUrl()}
               width="100%"
               height="800px"
               className="border-0"
